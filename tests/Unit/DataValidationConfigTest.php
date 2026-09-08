@@ -95,4 +95,12 @@ class DataValidationConfigTest extends TestCase
         $this->assertEquals(2505, $config->parsedRulesCache); // max(500, 50100 / 20) = 2505
         $this->assertEquals(501, $config->chunkSize); // max(500, min(10000, 50100 / 100)) = max(500, 501) = 501
     }
+
+    public function testChunkSizeCanBeNullToEnableDynamicHeuristic()
+    {
+        $config = new DataValidationConfig();
+        $config->chunkSize = null;
+
+        $this->assertNull($config->chunkSize);
+    }
 }

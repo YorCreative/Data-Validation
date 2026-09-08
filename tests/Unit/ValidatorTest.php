@@ -6,6 +6,7 @@ use Closure;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use YorCreative\DataValidation\DataValidationConfig;
 use YorCreative\DataValidation\RuleRegistry;
 use YorCreative\DataValidation\Validator;
 
@@ -18,20 +19,16 @@ class ValidatorTest extends TestCase
         // Reset RuleRegistry to ensure it loads actual rules
         $reflection = new ReflectionClass(RuleRegistry::class);
         $rulesProp = $reflection->getProperty('rules');
-        $rulesProp->setAccessible(true);
-        $rulesProp->setValue([]);
+        $rulesProp->setValue(null, []);
 
         $closureRulesProp = $reflection->getProperty('closureRules');
-        $closureRulesProp->setAccessible(true);
-        $closureRulesProp->setValue([]);
+        $closureRulesProp->setValue(null, []);
 
         $dirsProp = $reflection->getProperty('customRuleDirectories');
-        $dirsProp->setAccessible(true);
-        $dirsProp->setValue([]);
+        $dirsProp->setValue(null, []);
 
         $initProp = $reflection->getProperty('isInitialized');
-        $initProp->setAccessible(true);
-        $initProp->setValue(false);
+        $initProp->setValue(null, false);
     }
 
     protected function tearDown(): void
@@ -55,7 +52,6 @@ class ValidatorTest extends TestCase
         $validator = Validator::make(['field' => 'value'], []);
         $reflection = new ReflectionClass($validator);
         $method = $reflection->getMethod('addErrorMessageByRuleName');
-        $method->setAccessible(true);
         $method->invoke($validator, 'field', 'unknown', []);
         $this->assertArrayHasKey('field', $validator->errors());
         $this->assertStringContainsString('The field is invalid (unknown rule unknown)', $validator->errors()['field'][0]);
@@ -229,7 +225,6 @@ class ValidatorTest extends TestCase
         $validator = Validator::make([], ['field' => '']);
         $reflection = new ReflectionClass($validator);
         $method = $reflection->getMethod('getParsedRules');
-        $method->setAccessible(true);
         $this->assertEquals([], $method->invoke($validator, ''));
     }
 
@@ -238,7 +233,6 @@ class ValidatorTest extends TestCase
         $validator = Validator::make([], ['field' => 'required|min:5']);
         $reflection = new ReflectionClass($validator);
         $method = $reflection->getMethod('getParsedRules');
-        $method->setAccessible(true);
         $this->assertEquals(['required', 'min:5'], $method->invoke($validator, 'required|min:5'));
     }
 
@@ -275,7 +269,6 @@ class ValidatorTest extends TestCase
         $validator = Validator::make(['field' => 'value'], []);
         $reflection = new ReflectionClass($validator);
         $method = $reflection->getMethod('applyRules');
-        $method->setAccessible(true);
         $method->invoke($validator, 'field', 'value', ['unknown'], 'field', $validator->getData());
         $this->assertArrayHasKey('field', $validator->errors());
         $this->assertStringContainsString("Validation rule 'unknown' is not defined.", $validator->errors()['field'][0]);
@@ -286,7 +279,6 @@ class ValidatorTest extends TestCase
         $validator = Validator::make(['field' => 'value'], []);
         $reflection = new ReflectionClass($validator);
         $method = $reflection->getMethod('applyRules');
-        $method->setAccessible(true);
         $method->invoke($validator, 'field', 'value', [new \stdClass()], 'field', $validator->getData());
         $this->assertEmpty($validator->errors());
     }
@@ -334,7 +326,6 @@ class ValidatorTest extends TestCase
         $validator = Validator::make([], []);
         $reflection = new ReflectionClass($validator);
         $method = $reflection->getMethod('resolveOtherFieldPathForComparison');
-        $method->setAccessible(true);
         $result = $method->invoke($validator, 'users.*.status', 'users.0.profile.email');
         $this->assertEquals('users.0.status', $result);
     }
@@ -344,7 +335,6 @@ class ValidatorTest extends TestCase
         $validator = Validator::make([], []);
         $reflection = new ReflectionClass($validator);
         $method = $reflection->getMethod('resolveOtherFieldPathForComparison');
-        $method->setAccessible(true);
         $result = $method->invoke($validator, 'user.status', 'user.profile.email');
         $this->assertEquals('user.status', $result);
     }
@@ -354,7 +344,6 @@ class ValidatorTest extends TestCase
         $validator = Validator::make([], []);
         $reflection = new ReflectionClass($validator);
         $method = $reflection->getMethod('resolveOtherFieldPathForComparison');
-        $method->setAccessible(true);
         $result = $method->invoke($validator, 'other.*.data', 'user.profile');
         $this->assertEquals('other.profile.data', $result);
     }
@@ -364,7 +353,6 @@ class ValidatorTest extends TestCase
         $validator = Validator::make([], []);
         $reflection = new ReflectionClass($validator);
         $method = $reflection->getMethod('formatMessage');
-        $method->setAccessible(true);
         $template = 'The :attribute must be at least :min.';
         $result = $method->invoke($validator, $template, 'age', 'min', ['18']);
         $this->assertEquals('The age must be at least 18.', $result);
@@ -375,7 +363,6 @@ class ValidatorTest extends TestCase
         $validator = Validator::make([], []);
         $reflection = new ReflectionClass($validator);
         $method = $reflection->getMethod('formatMessage');
-        $method->setAccessible(true);
         $template = 'The :attribute must be between :min and :max.';
         $result = $method->invoke($validator, $template, 'age', 'between', ['18', '65']);
         $this->assertEquals('The age must be between 18 and 65.', $result);
@@ -386,7 +373,6 @@ class ValidatorTest extends TestCase
         $validator = Validator::make([], ['status' => 'in:active,inactive']);
         $reflection = new \ReflectionClass($validator);
         $method = $reflection->getMethod('formatMessage');
-        $method->setAccessible(true);
         $message = $method->invoke($validator, 'The :attribute must be one of: :values.', 'status', 'in', ['active', 'inactive']);
         $this->assertEquals('The status must be one of: active, inactive.', $message);
     }
@@ -396,7 +382,6 @@ class ValidatorTest extends TestCase
         $validator = Validator::make([], [], [], ['other' => 'Other Field']);
         $reflection = new ReflectionClass($validator);
         $method = $reflection->getMethod('formatMessage');
-        $method->setAccessible(true);
         $template = 'The :attribute must match :other.';
         $result = $method->invoke($validator, $template, 'field', 'same', ['other']);
         $this->assertEquals('The field must match Other Field.', $result);
@@ -407,7 +392,6 @@ class ValidatorTest extends TestCase
         $validator = Validator::make([], []);
         $reflection = new ReflectionClass($validator);
         $method = $reflection->getMethod('formatMessage');
-        $method->setAccessible(true);
 
         $template = ':values';
         $ruleParameters = ['active', 'inactive'];
@@ -428,7 +412,6 @@ class ValidatorTest extends TestCase
         $validator = Validator::make(['field' => 'value'], []);
         $reflection = new ReflectionClass($validator);
         $method = $reflection->getMethod('addErrorMessageByRuleName');
-        $method->setAccessible(true);
         $method->invoke($validator, 'field', 'array', []);
         $this->assertArrayHasKey('field', $validator->errors());
         $this->assertStringContainsString('The field must be an array.', $validator->errors()['field'][0]);
@@ -502,7 +485,6 @@ class ValidatorTest extends TestCase
         $validator->getFieldValue('user.name');
         $reflection = new ReflectionClass($validator);
         $cacheProp = $reflection->getProperty('fieldValueCache');
-        $cacheProp->setAccessible(true);
         $cache = $cacheProp->getValue($validator);
         $this->assertArrayHasKey('user.name', $cache);
         $this->assertEquals('John', $cache['user.name']);
@@ -513,6 +495,14 @@ class ValidatorTest extends TestCase
         $validator = Validator::make([], ['name' => 'required']);
         $validator->validate();
         $this->assertTrue($validator->fails());
+    }
+
+    public function testFailsTriggersValidationOnFirstUse(): void
+    {
+        $validator = Validator::make([], ['name' => 'required']);
+
+        $this->assertTrue($validator->fails());
+        $this->assertArrayHasKey('name', $validator->errors());
     }
 
     public function testFailsWithoutErrors(): void
@@ -527,6 +517,24 @@ class ValidatorTest extends TestCase
         $validator = Validator::make(['name' => 'John'], ['name' => 'required']);
         $validator->validate();
         $this->assertTrue($validator->passes());
+    }
+
+    public function testPassesTriggersValidationOnFirstUse(): void
+    {
+        // Invalid data: only a lazily-validating passes() can return false here.
+        // v1.0 returned true because the errors array had not been populated yet.
+        $validator = Validator::make([], ['name' => 'required']);
+
+        $this->assertFalse($validator->passes());
+        $this->assertArrayHasKey('name', $validator->errors());
+    }
+
+    public function testPassesReturnsTrueForValidDataWithoutExplicitValidateCall(): void
+    {
+        $validator = Validator::make(['name' => 'John'], ['name' => 'required']);
+
+        $this->assertTrue($validator->passes());
+        $this->assertEmpty($validator->errors());
     }
 
     public function testPassesWithErrors(): void
@@ -583,7 +591,6 @@ class ValidatorTest extends TestCase
         $validator = Validator::make([], []);
         $reflection = new ReflectionClass($validator);
         $method = $reflection->getMethod('determineChunkSize');
-        $method->setAccessible(true);
 
         $chunkSize = $method->invoke($validator, 500);
         $this->assertEquals(500, $chunkSize, 'Chunk size should equal dataset size for small datasets');
@@ -594,7 +601,6 @@ class ValidatorTest extends TestCase
         $validator = Validator::make([], []);
         $reflection = new ReflectionClass($validator);
         $method = $reflection->getMethod('determineChunkSize');
-        $method->setAccessible(true);
 
         $chunkSize = $method->invoke($validator, 2000);
         $this->assertEquals(1000, $chunkSize, 'Chunk size should be 1000 for medium datasets');
@@ -605,10 +611,35 @@ class ValidatorTest extends TestCase
         $validator = Validator::make([], []);
         $reflection = new ReflectionClass($validator);
         $method = $reflection->getMethod('determineChunkSize');
-        $method->setAccessible(true);
 
         $chunkSize = $method->invoke($validator, 5000);
         $this->assertEquals(500, $chunkSize, 'Chunk size should be 500 for large datasets');
+    }
+
+    public function testDynamicChunkSizeIsUsedWhenConfiguredChunkSizeIsNull(): void
+    {
+        $config = new DataValidationConfig();
+        $config->chunkSize = null;
+
+        $validator = Validator::make([], [], [], [], false, $config);
+        $reflection = new ReflectionClass($validator);
+        $method = $reflection->getMethod('determineChunkSize');
+
+        $chunkSize = $method->invoke($validator, 2000);
+        $this->assertEquals(1000, $chunkSize, 'Dynamic chunk sizing should be used when config chunk size is null');
+    }
+
+    public function testConfiguredChunkSizeIsNormalizedToAtLeastOne(): void
+    {
+        $config = new DataValidationConfig();
+        $config->chunkSize = 0;
+
+        $validator = Validator::make([], [], [], [], false, $config);
+        $reflection = new ReflectionClass($validator);
+        $method = $reflection->getMethod('determineChunkSize');
+
+        $chunkSize = $method->invoke($validator, 2000);
+        $this->assertEquals(1, $chunkSize, 'Configured chunk size should be clamped to a positive value');
     }
 
     public function testValidateWithDynamicChunkSize(): void
@@ -631,5 +662,15 @@ class ValidatorTest extends TestCase
         $data = ['name' => 'John'];
         $rules = ['name' => 'required|string'];
         $this->assertTrue(Validator::isValid($data, $rules));
+    }
+
+    public function testValidatorIsValidSupportsConfigObject(): void
+    {
+        $data = ['users' => [['name' => 'John']]];
+        $rules = ['users.*.name' => 'required|string'];
+        $config = new DataValidationConfig();
+        $config->chunkSize = null;
+
+        $this->assertTrue(Validator::isValid($data, $rules, [], [], false, $config));
     }
 }
