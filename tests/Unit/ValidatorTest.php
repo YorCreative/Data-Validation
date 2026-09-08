@@ -692,6 +692,33 @@ class ValidatorTest extends TestCase
         $this->assertTrue(Validator::isValid($data, $rules, [], [], false, $config));
     }
 
+    public function testIsValidThreadsTheConfigThroughToTheValidator(): void
+    {
+        // isValid() returns bool, so no instance is reachable to inspect.
+        // The Validator constructor copies parsedRulesCache into a STATIC
+        // cache limit, and that side effect outlives the call -- it is the
+        // only way to prove isValid() forwarded its config, because PHP
+        // silently discards extra arguments and a dropped config leaves no
+        // other trace. setUp() resets this static to 500.
+        //
+        // NOTE: this couples the test to the static-leak behaviour that
+        // Workstream 2.1 is scheduled to remove. When $cacheLimit becomes
+        // instance-scoped, this test must be revisited.
+        $reflection = new ReflectionClass(Validator::class);
+        $cacheLimit = $reflection->getProperty('cacheLimit');
+
+        $config = new DataValidationConfig();
+        $config->parsedRulesCache = 77;
+
+        Validator::isValid(['name' => 'John'], ['name' => 'required'], [], [], false, $config);
+
+        $this->assertSame(
+            77,
+            $cacheLimit->getValue(),
+            'isValid() must forward its config to the Validator instance.'
+        );
+    }
+
     public function testParsedRulesCacheEvictionKeepsTheCacheBounded(): void
     {
         $config = new DataValidationConfig();

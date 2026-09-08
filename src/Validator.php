@@ -63,9 +63,10 @@ class Validator
         array $rules,
         array $messages = [],
         array $attributes = [],
-        bool $stopOnFirstError = false
+        bool $stopOnFirstError = false,
+        ?DataValidationConfig $config = null
     ): bool {
-        return static::make($data, $rules, $messages, $attributes, $stopOnFirstError)->validate();
+        return static::make($data, $rules, $messages, $attributes, $stopOnFirstError, $config)->validate();
     }
 
     public function clearParsedRulesCache(): void
