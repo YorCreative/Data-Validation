@@ -6,7 +6,7 @@ class DataValidationConfig
 {
     public int $fieldCacheLimit = 1000;
     public int $parsedRulesCache = 500;
-    public int $chunkSize = 500;
+    public ?int $chunkSize = 500;
 
     public function optimizeForLargeDataset(int $totalItems): void
     {
