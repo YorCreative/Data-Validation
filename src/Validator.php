@@ -220,7 +220,8 @@ class Validator
             }
             if (!isset(self::$parsedRulesCache[$ruleSet])) {
                 if (count(self::$parsedRulesCache) >= self::$cacheLimit) {
-                    self::$parsedRulesCache = array_slice(self::$parsedRulesCache, -self::$cacheLimit / 2, null, true);
+                    $itemsToRetain = max(1, intdiv(self::$cacheLimit, 2));
+                    self::$parsedRulesCache = array_slice(self::$parsedRulesCache, -$itemsToRetain, null, true);
                 }
                 self::$parsedRulesCache[$ruleSet] = explode('|', $ruleSet);
             }

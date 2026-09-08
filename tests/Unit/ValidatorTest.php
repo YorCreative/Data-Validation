@@ -29,6 +29,13 @@ class ValidatorTest extends TestCase
 
         $initProp = $reflection->getProperty('isInitialized');
         $initProp->setValue(null, false);
+
+        // Validator keeps the parsed-rules cache AND its limit in statics.
+        // A test that lowers the limit would otherwise leak it into every
+        // test that follows in this file.
+        $validatorReflection = new ReflectionClass(Validator::class);
+        $validatorReflection->getProperty('parsedRulesCache')->setValue(null, []);
+        $validatorReflection->getProperty('cacheLimit')->setValue(null, 500);
     }
 
     protected function tearDown(): void
@@ -672,5 +679,36 @@ class ValidatorTest extends TestCase
         $config->chunkSize = null;
 
         $this->assertTrue(Validator::isValid($data, $rules, [], [], false, $config));
+    }
+
+    public function testParsedRulesCacheEvictionKeepsTheCacheBounded(): void
+    {
+        $config = new DataValidationConfig();
+
+        // A limit of 1 is the value at which the implementations diverge.
+        // v1.0 computes -1/2 = -0.5, which truncates to offset 0, so
+        // array_slice() returns the WHOLE array and the cache never shrinks.
+        // The fix computes max(1, intdiv(1, 2)) = 1 and retains one entry.
+        $config->parsedRulesCache = 1;
+
+        $validator = Validator::make([], [], [], [], false, $config);
+        $validator->clearParsedRulesCache();
+
+        $reflection = new ReflectionClass($validator);
+        $method = $reflection->getMethod('getParsedRules');
+
+        // Push more distinct rule strings through than the cache can hold.
+        for ($i = 0; $i < 12; $i++) {
+            $method->invoke($validator, "required|string|min:{$i}");
+        }
+
+        $cache = $reflection->getProperty('parsedRulesCache')->getValue();
+
+        $this->assertLessThanOrEqual(
+            2,
+            count($cache),
+            'Cache must stay bounded. v1.0 grew to 12 because a float offset of -0.5 truncated to 0.'
+        );
+        $this->assertNotEmpty($cache);
     }
 }
