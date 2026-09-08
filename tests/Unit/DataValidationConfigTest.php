@@ -104,7 +104,7 @@ class DataValidationConfigTest extends TestCase
         $this->assertNull($config->chunkSize);
     }
 
-    public function testOptimizeForLargeDatasetAssignsIntegersForNonDivisibleTotals(): void
+    public function testOptimizeForLargeDatasetClampsToMinimumsForSmallTotals(): void
     {
         $config = new DataValidationConfig();
 
