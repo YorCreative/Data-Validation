@@ -1,10 +1,13 @@
-FROM php:8.4-fpm
+ARG PHP_VERSION=8.5
+FROM php:${PHP_VERSION}-fpm
 
 RUN apt-get update \
     && apt-get -y install libzip-dev zlib1g-dev git zip unzip libicu-dev \
-    && apt-get clean; rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/* \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
 
-RUN docker-php-ext-configure zip && docker-php-ext-install zip intl
+RUN docker-php-ext-configure zip \
+    && docker-php-ext-install zip intl
 
 # Install Xdebug only
 RUN pecl install xdebug \
