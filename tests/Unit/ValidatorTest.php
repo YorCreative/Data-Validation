@@ -649,6 +649,17 @@ class ValidatorTest extends TestCase
         $this->assertEquals(1, $chunkSize, 'Configured chunk size should be clamped to a positive value');
     }
 
+    public function testDeterminesChunkSizeDynamicallyWhenNoConfigProvided(): void
+    {
+        $validator = Validator::make([], []);
+
+        $reflection = new ReflectionClass($validator);
+        $method = $reflection->getMethod('determineChunkSize');
+
+        $this->assertSame(1000, $method->invoke($validator, 2000));
+        $this->assertSame(500, $method->invoke($validator, 5000));
+    }
+
     public function testValidateWithDynamicChunkSize(): void
     {
         $data = ['users' => array_fill(0, 1500, ['name' => 'John'])];

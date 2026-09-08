@@ -186,8 +186,8 @@ class Validator
 
     private function determineChunkSize(int $dataSize): int
     {
-        if (($chunkSize = $this->config->chunkSize) !== null) {
-            return $chunkSize;
+        if (($chunkSize = $this->config?->chunkSize) !== null) {
+            return max(1, $chunkSize);
         }
 
         if ($dataSize <= self::DATA_SIZE_THRESHOLD_LOWER) {
