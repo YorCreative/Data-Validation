@@ -230,7 +230,7 @@ class Validator
         return is_array($ruleSet) ? $ruleSet : [];
     }
 
-    private function applyRules(string $field, $value, array $rules, string $originalRulePath, array &$data): void
+    private function applyRules(string $field, $value, array $rules, string $originalRulePath, array $data): void
     {
         $isNullable = in_array('nullable', $rules, true);
         if (($value === null || (is_string($value) && $value === '')) && $isNullable) {
