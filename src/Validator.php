@@ -15,6 +15,7 @@ class Validator
     private array $attributes = [];
     private array $fieldValueCache = [];
     private bool $stopOnFirstError;
+    private bool $hasValidated = false;
     private int $fieldCacheLimit = 1000;
     private static array $rulesNeedingParamPrep = ['same', 'different', 'required_if', 'required_unless'];
     private static array $parsedRulesCache = [];
@@ -106,6 +107,7 @@ class Validator
 
     public function validate(): bool
     {
+        $this->hasValidated = true;
         $this->errors = [];
         $this->fieldValueCache = [];
         $stack = [];
@@ -407,11 +409,20 @@ class Validator
 
     public function fails(): bool
     {
-        return !empty($this->errors);
+        return !$this->validationPassed();
     }
 
     public function passes(): bool
     {
+        return $this->validationPassed();
+    }
+
+    private function validationPassed(): bool
+    {
+        if (!$this->hasValidated) {
+            return $this->validate();
+        }
+
         return empty($this->errors);
     }
 
@@ -428,7 +439,8 @@ class Validator
             'errors' => $this->errors,
             'messages' => $this->messages,
             'attributes' => $this->attributes,
-            'stopOnFirstError' => $this->stopOnFirstError
+            'stopOnFirstError' => $this->stopOnFirstError,
+            'hasValidated' => $this->hasValidated
         ];
     }
 
@@ -440,6 +452,7 @@ class Validator
         $this->messages = $sData['messages'] ?? [];
         $this->attributes = $sData['attributes'] ?? [];
         $this->stopOnFirstError = $sData['stopOnFirstError'] ?? false;
+        $this->hasValidated = $sData['hasValidated'] ?? false;
         $this->fieldValueCache = [];
     }
 }

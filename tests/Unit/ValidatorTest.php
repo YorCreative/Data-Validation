@@ -536,6 +536,27 @@ class ValidatorTest extends TestCase
         $this->assertArrayHasKey('name', $validator->errors());
     }
 
+    public function testValidationStateSurvivesSerializationRoundTrip(): void
+    {
+        $validator = Validator::make([], ['name' => 'required']);
+        $validator->validate();
+
+        $restored = unserialize(serialize($validator));
+
+        $this->assertTrue($restored->fails());
+        $this->assertArrayHasKey('name', $restored->errors());
+    }
+
+    public function testRepeatedPassesCallsValidateOnlyOnce(): void
+    {
+        $validator = Validator::make(['name' => 'John'], ['name' => 'required']);
+
+        $this->assertTrue($validator->passes());
+
+        $reflection = new ReflectionClass($validator);
+        $this->assertTrue($reflection->getProperty('hasValidated')->getValue($validator));
+    }
+
     public function testPassesReturnsTrueForValidDataWithoutExplicitValidateCall(): void
     {
         $validator = Validator::make(['name' => 'John'], ['name' => 'required']);
