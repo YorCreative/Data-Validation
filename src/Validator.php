@@ -430,6 +430,16 @@ class Validator
         return $this->validationPassed();
     }
 
+    // hasValidated is a claim about the CURRENT $data/$rules: once true, it
+    // means $this->errors reflects a completed run against exactly the data
+    // and rules this instance holds right now. That claim only holds because
+    // this class has no mutators for $data or $rules after construction --
+    // there is nothing that can invalidate a completed run out from under
+    // this flag. Any future setter for either property MUST also reset
+    // hasValidated = false, or this method (and therefore passes()/fails())
+    // will return a verdict about data/rules that no longer exist. Later
+    // workstreams build validated() and validateOrFail() on top of this
+    // flag, so a violation here is not merely cosmetic.
     private function validationPassed(): bool
     {
         if (!$this->hasValidated) {
