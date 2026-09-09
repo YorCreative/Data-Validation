@@ -117,6 +117,9 @@ class DataValidationConfigTest extends TestCase
         $this->assertSame(500, $config->chunkSize);
     }
 
+    // Depends on phpunit.xml's failOnDeprecation="true": the behaviour this
+    // test covers has no value-level observable, only a deprecation notice
+    // that would otherwise pass silently.
     public function testOptimizeForLargeDatasetScalesWithLargeNonDivisibleTotals(): void
     {
         $config = new DataValidationConfig();

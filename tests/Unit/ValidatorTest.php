@@ -742,6 +742,9 @@ class ValidatorTest extends TestCase
         $this->assertEquals(1, $chunkSize, 'Configured chunk size should be clamped to a positive value');
     }
 
+    // Depends on phpunit.xml's failOnWarning="true": the behaviour this test
+    // covers has no value-level observable, only a warning that would
+    // otherwise pass silently.
     public function testDeterminesChunkSizeDynamicallyWhenNoConfigProvided(): void
     {
         $validator = Validator::make([], []);
