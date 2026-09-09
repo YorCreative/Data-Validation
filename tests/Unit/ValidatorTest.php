@@ -6,8 +6,10 @@ use Closure;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use RuntimeException;
 use YorCreative\DataValidation\DataValidationConfig;
 use YorCreative\DataValidation\RuleRegistry;
+use YorCreative\DataValidation\Rules\ValidationRuleInterface;
 use YorCreative\DataValidation\Validator;
 
 class ValidatorTest extends TestCase
@@ -545,6 +547,65 @@ class ValidatorTest extends TestCase
 
         $this->assertTrue($restored->fails());
         $this->assertArrayHasKey('name', $restored->errors());
+    }
+
+    public function testHasValidatedStaysFalseWhenARuleThrowsMidValidation(): void
+    {
+        // Force RuleRegistry to finish its normal discovery pass first, so
+        // injecting a throwing rule below does not get wiped out by a
+        // deferred loadRules() the next time a rule is looked up.
+        RuleRegistry::hasRule('required');
+
+        $reflection = new ReflectionClass(RuleRegistry::class);
+        $rulesProp = $reflection->getProperty('rules');
+        $rules = $rulesProp->getValue();
+        $rules['throwing_test_rule'] = new class implements ValidationRuleInterface {
+            public function validate(string $field, $value, array $parameters, array $data): bool
+            {
+                throw new RuntimeException('boom mid-validation');
+            }
+
+            public function getErrorMessage(string $field, array $parameters, ?string $customMessage): string
+            {
+                return '';
+            }
+
+            public function validateParameters(string $field, array $parameters): void
+            {
+            }
+        };
+        $rulesProp->setValue(null, $rules);
+
+        $validator = Validator::make(['name' => 'John'], ['name' => 'throwing_test_rule']);
+
+        $threw = false;
+        try {
+            $validator->validate();
+        } catch (RuntimeException $e) {
+            $threw = true;
+        }
+        $this->assertTrue($threw, 'Expected the injected rule to throw mid-validation.');
+
+        $validatorReflection = new ReflectionClass($validator);
+        $hasValidatedProp = $validatorReflection->getProperty('hasValidated');
+        $this->assertFalse(
+            $hasValidatedProp->getValue($validator),
+            'hasValidated must stay false when validate() never completed.'
+        );
+
+        // A later passes() call must re-attempt validation (and therefore
+        // re-throw against this still-broken rule set) rather than silently
+        // reporting success from a stale, empty errors array.
+        $threwAgain = false;
+        try {
+            $validator->passes();
+        } catch (RuntimeException $e) {
+            $threwAgain = true;
+        }
+        $this->assertTrue(
+            $threwAgain,
+            'passes() must re-attempt validation rather than report success after an incomplete run.'
+        );
     }
 
     public function testRepeatedPassesCallsValidateOnlyOnce(): void

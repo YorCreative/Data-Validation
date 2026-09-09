@@ -113,7 +113,6 @@ class Validator
 
     public function validate(): bool
     {
-        $this->hasValidated = true;
         $this->errors = [];
         $this->fieldValueCache = [];
         $stack = [];
@@ -177,9 +176,11 @@ class Validator
                 ];
             }
             if ($this->stopOnFirstError && !empty($this->errors)) {
+                $this->hasValidated = true;
                 return false;
             }
         }
+        $this->hasValidated = true;
         return empty($this->errors);
     }
 
