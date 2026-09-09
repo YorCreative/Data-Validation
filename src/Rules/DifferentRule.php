@@ -37,7 +37,9 @@ class DifferentRule implements ValidationRuleInterface
     public function validateParameters(string $field, array $parameters): void
     {
         if (count($parameters) !== 1) {
-            throw new InvalidArgumentException("The 'different' rule for field '{$field}' requires exactly one parameter.");
+            throw new InvalidArgumentException(
+                "The 'different' rule for field '{$field}' requires exactly one parameter."
+            );
         }
     }
 }

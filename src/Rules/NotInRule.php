@@ -19,7 +19,9 @@ class NotInRule implements ValidationRuleInterface
     public function validateParameters(string $field, array $parameters): void
     {
         if (empty($parameters)) {
-            throw new InvalidArgumentException("The 'not_in' rule for field '{$field}' requires at least one parameter.");
+            throw new InvalidArgumentException(
+                "The 'not_in' rule for field '{$field}' requires at least one parameter."
+            );
         }
     }
 }

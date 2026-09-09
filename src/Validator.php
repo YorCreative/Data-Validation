@@ -87,19 +87,25 @@ class Validator
     {
         foreach ($this->rules as $field => $ruleSet) {
             if (!is_string($ruleSet) && !is_array($ruleSet)) {
-                throw new InvalidArgumentException("Invalid rule set type for field '{$field}': must be string or array");
+                throw new InvalidArgumentException(
+                    "Invalid rule set type for field '{$field}': must be string or array"
+                );
             }
             $parsedRules = $this->getParsedRules($ruleSet);
             foreach ($parsedRules as $rule) {
                 if (is_string($rule)) {
                     [$ruleName, $parameters] = $this->parseRule($rule);
                     if (!RuleRegistry::hasRule($ruleName)) {
-                        throw new InvalidArgumentException("Unknown validation rule '{$ruleName}' for field '{$field}'");
+                        throw new InvalidArgumentException(
+                            "Unknown validation rule '{$ruleName}' for field '{$field}'"
+                        );
                     }
                     $ruleInstance = RuleRegistry::getRule($ruleName);
                     $ruleInstance->validateParameters($field, $parameters);
                 } elseif (!($rule instanceof Closure)) {
-                    throw new InvalidArgumentException("Invalid rule type for field '{$field}': must be string or Closure");
+                    throw new InvalidArgumentException(
+                        "Invalid rule type for field '{$field}': must be string or Closure"
+                    );
                 }
             }
         }
@@ -287,8 +293,10 @@ class Validator
         }
     }
 
-    private function resolveOtherFieldPathForComparison(string $otherFieldWithPossibleWildcards, string $currentFieldPath): string
-    {
+    private function resolveOtherFieldPathForComparison(
+        string $otherFieldWithPossibleWildcards,
+        string $currentFieldPath
+    ): string {
         $otherParts = explode('.', $otherFieldWithPossibleWildcards);
         $currentParts = explode('.', $currentFieldPath);
 
@@ -314,7 +322,8 @@ class Validator
 
         $replacements = [];
 
-        if (in_array($ruleName, ['in', 'not_in', 'starts_with', 'ends_with', 'required_if', 'required_unless']) && !empty($ruleParameters)) {
+        $ruleNamesRequiringValueList = ['in', 'not_in', 'starts_with', 'ends_with', 'required_if', 'required_unless'];
+        if (in_array($ruleName, $ruleNamesRequiringValueList) && !empty($ruleParameters)) {
             if (in_array($ruleName, ['required_if', 'required_unless'])) {
                 $values = array_map('strval', array_slice($ruleParameters, 1));
             } else {
@@ -358,7 +367,10 @@ class Validator
                 $template = 'The :attribute must be an array.';
                 $this->addErrorRaw($field, $this->formatMessage($template, $field, $ruleName, $parameters));
             } else {
-                $this->addErrorRaw($field, "The {$this->getAttributeName($field)} is invalid (unknown rule {$ruleName}).");
+                $this->addErrorRaw(
+                    $field,
+                    "The {$this->getAttributeName($field)} is invalid (unknown rule {$ruleName})."
+                );
             }
         }
     }

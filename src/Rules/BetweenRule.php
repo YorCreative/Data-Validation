@@ -39,7 +39,9 @@ class BetweenRule implements ValidationRuleInterface
     public function validateParameters(string $field, array $parameters): void
     {
         if (count($parameters) !== 2 || !is_numeric($parameters[0]) || !is_numeric($parameters[1])) {
-            throw new InvalidArgumentException("The 'between' rule for field '{$field}' requires exactly two numeric parameters.");
+            throw new InvalidArgumentException(
+                "The 'between' rule for field '{$field}' requires exactly two numeric parameters."
+            );
         }
     }
 }
