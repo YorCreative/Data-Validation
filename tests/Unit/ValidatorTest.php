@@ -778,6 +778,16 @@ class ValidatorTest extends TestCase
         $this->assertTrue(Validator::isValid($data, $rules));
     }
 
+    /**
+     * NOTE: despite its name, this does not prove that isValid() threads the
+     * config through to the Validator -- it passes even against unfixed code
+     * that silently drops the config argument, since chunkSize = null is
+     * also the Validator's default. It only exercises the null-chunk-size
+     * smoke path (that isValid() accepts a DataValidationConfig argument at
+     * all without erroring). See
+     * testIsValidThreadsTheConfigThroughToTheValidator() for the test that
+     * actually proves the config is forwarded.
+     */
     public function testValidatorIsValidSupportsConfigObject(): void
     {
         $data = ['users' => [['name' => 'John']]];
