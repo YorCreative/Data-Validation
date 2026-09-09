@@ -5,6 +5,7 @@ namespace YorCreative\DataValidation\Tests\Feature;
 use Illuminate\Config\Repository as ConfigRepository;
 use Illuminate\Container\Container;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 use YorCreative\DataValidation\DataValidationConfig;
 use YorCreative\DataValidation\Laravel\DataValidationServiceProvider;
 use YorCreative\DataValidation\Validator;
@@ -100,5 +101,33 @@ class LaravelServiceProviderTest extends TestCase
         $cfg = $app->make(DataValidationConfig::class);
 
         $this->assertNull($cfg->chunkSize);
+    }
+
+    /**
+     * boot()'s runningInConsole()/publishes() wiring needs an application
+     * exposing runningInConsole() and configPath(), which a bare
+     * Illuminate\Container\Container does not provide and which we will not
+     * fake with a test double (no mocks). What CAN break silently without an
+     * app is configPath() itself: if it resolved to a nonexistent file,
+     * `vendor:publish --tag=data-validation-config` would publish nothing
+     * while still appearing to succeed. This test guards that.
+     */
+    public function testConfigPathResolvesToAReadablePublishableConfigFile(): void
+    {
+        $reflection = new ReflectionClass(DataValidationServiceProvider::class);
+        $method = $reflection->getMethod('configPath');
+
+        $provider = new DataValidationServiceProvider($this->app);
+        $path = $method->invoke($provider);
+
+        $this->assertFileExists($path);
+        $this->assertIsReadable($path);
+
+        $config = require $path;
+
+        $this->assertIsArray($config);
+        $this->assertArrayHasKey('field_cache_limit', $config);
+        $this->assertArrayHasKey('parsed_rules_cache', $config);
+        $this->assertArrayHasKey('chunk_size', $config);
     }
 }

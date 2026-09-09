@@ -60,6 +60,15 @@ class DataValidationServiceProvider extends ServiceProvider
         });
     }
 
+    // NOTE: the runningInConsole()/publishes() wiring below is not covered by
+    // the test suite. Exercising it needs an application object exposing
+    // runningInConsole() and configPath(), which a bare
+    // Illuminate\Container\Container does not provide; building one for the
+    // test would be a test double, which this project's no-mocks constraint
+    // forbids. LaravelServiceProviderTest::
+    // testConfigPathResolvesToAReadablePublishableConfigFile instead covers
+    // the one part of this that can break silently: configPath() resolving
+    // to a file that does not exist.
     public function boot(): void
     {
         if ($this->app->runningInConsole()) {
