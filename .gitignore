@@ -5,3 +5,4 @@ clover.xml
 /data-validation
 *.cache
 .phpunit.result.cache
+docs/
