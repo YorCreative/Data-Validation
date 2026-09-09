@@ -545,6 +545,17 @@ class ValidatorTest extends TestCase
 
         $restored = unserialize(serialize($validator));
 
+        // Guards __serialize()/__unserialize() actually round-tripping the
+        // hasValidated flag itself: without it, an unserialized instance
+        // defaults hasValidated to false, fails() silently re-runs
+        // validate(), and the assertions below would still pass even though
+        // the flag was never carried across the round trip.
+        $reflection = new ReflectionClass($restored);
+        $this->assertTrue(
+            $reflection->getProperty('hasValidated')->getValue($restored),
+            'hasValidated must be restored as true by the serialization round trip.'
+        );
+
         $this->assertTrue($restored->fails());
         $this->assertArrayHasKey('name', $restored->errors());
     }
