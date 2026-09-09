@@ -70,6 +70,9 @@
     "coverage-html": "php ./vendor/bin/phpunit --testdox --coverage-html data-validation"
   },
   "config": {
-    "process-timeout": 0
+    "process-timeout": 0,
+    "platform": {
+      "php": "8.3.0"
+    }
   }
 }
