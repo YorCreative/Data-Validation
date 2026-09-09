@@ -16,6 +16,7 @@ class Validator
     private array $fieldValueCache = [];
     private bool $stopOnFirstError;
     private bool $hasValidated = false;
+    private bool $validating = false;
     private int $fieldCacheLimit = 1000;
     private static array $rulesNeedingParamPrep = ['same', 'different', 'required_if', 'required_unless'];
     private static array $parsedRulesCache = [];
@@ -113,75 +114,82 @@ class Validator
 
     public function validate(): bool
     {
-        $this->errors = [];
-        $this->fieldValueCache = [];
-        $stack = [];
+        $this->validating = true;
+        try {
+            $this->errors = [];
+            $this->fieldValueCache = [];
+            $stack = [];
 
-        foreach ($this->rules as $field => $ruleSet) {
-            if (empty($ruleSet) && !($ruleSet instanceof Closure)) {
-                continue;
-            }
-            $stack[] = [
-                'data' => &$this->data,
-                'fieldParts' => explode('.', $field),
-                'rules' => $this->getParsedRules($ruleSet),
-                'currentPath' => '',
-                'fullPath' => $field
-            ];
-        }
-
-        while (!empty($stack)) {
-            $current = array_shift($stack);
-            $dataValue = &$current['data'];
-            $fieldParts = $current['fieldParts'];
-            $rules = $current['rules'];
-            $currentPath = $current['currentPath'];
-            $fullPath = $current['fullPath'];
-
-            if (empty($fieldParts)) {
-                $this->applyRules($currentPath, $dataValue, $rules, $fullPath, $this->data);
-            } elseif ($fieldParts[0] === '*') {
-                if (!is_array($dataValue)) {
-                    if ($this->hasRequiredRule($rules)) {
-                        $this->handleNonArray($currentPath, $fullPath, $rules);
-                    }
+            foreach ($this->rules as $field => $ruleSet) {
+                if (empty($ruleSet) && !($ruleSet instanceof Closure)) {
                     continue;
                 }
-                $chunkSize = $this->determineChunkSize(count($dataValue));
-                $keys = array_keys($dataValue);
-                foreach (array_chunk($keys, $chunkSize) as $chunkKeys) {
-                    foreach ($chunkKeys as $key) {
-                        $newPath = $currentPath ? "$currentPath.$key" : (string)$key;
-                        $newFullPath = preg_replace('/(?<!\\\\)\*/', (string)$key, $fullPath, 1);
-                        $stack[] = [
-                            'data' => &$dataValue[$key],
-                            'fieldParts' => array_slice($fieldParts, 1),
-                            'rules' => $rules,
-                            'currentPath' => $newPath,
-                            'fullPath' => $newFullPath
-                        ];
-                    }
-                    gc_collect_cycles();
-                }
-            } else {
-                $part = array_shift($fieldParts);
-                $subData = is_array($dataValue) && array_key_exists($part, $dataValue) ? $dataValue[$part] : null;
-                $newPath = $currentPath ? "$currentPath.$part" : $part;
                 $stack[] = [
-                    'data' => &$subData,
-                    'fieldParts' => $fieldParts,
-                    'rules' => $rules,
-                    'currentPath' => $newPath,
-                    'fullPath' => $fullPath
+                    'data' => &$this->data,
+                    'fieldParts' => explode('.', $field),
+                    'rules' => $this->getParsedRules($ruleSet),
+                    'currentPath' => '',
+                    'fullPath' => $field
                 ];
             }
-            if ($this->stopOnFirstError && !empty($this->errors)) {
-                $this->hasValidated = true;
-                return false;
+
+            while (!empty($stack)) {
+                $current = array_shift($stack);
+                $dataValue = &$current['data'];
+                $fieldParts = $current['fieldParts'];
+                $rules = $current['rules'];
+                $currentPath = $current['currentPath'];
+                $fullPath = $current['fullPath'];
+
+                if (empty($fieldParts)) {
+                    $this->applyRules($currentPath, $dataValue, $rules, $fullPath, $this->data);
+                } elseif ($fieldParts[0] === '*') {
+                    if (!is_array($dataValue)) {
+                        if ($this->hasRequiredRule($rules)) {
+                            $this->handleNonArray($currentPath, $fullPath, $rules);
+                        }
+                        continue;
+                    }
+                    $chunkSize = $this->determineChunkSize(count($dataValue));
+                    $keys = array_keys($dataValue);
+                    foreach (array_chunk($keys, $chunkSize) as $chunkKeys) {
+                        foreach ($chunkKeys as $key) {
+                            $newPath = $currentPath ? "$currentPath.$key" : (string)$key;
+                            $newFullPath = preg_replace('/(?<!\\\\)\*/', (string)$key, $fullPath, 1);
+                            $stack[] = [
+                                'data' => &$dataValue[$key],
+                                'fieldParts' => array_slice($fieldParts, 1),
+                                'rules' => $rules,
+                                'currentPath' => $newPath,
+                                'fullPath' => $newFullPath
+                            ];
+                        }
+                        gc_collect_cycles();
+                    }
+                } else {
+                    $part = array_shift($fieldParts);
+                    $subData = is_array($dataValue) && array_key_exists($part, $dataValue)
+                        ? $dataValue[$part]
+                        : null;
+                    $newPath = $currentPath ? "$currentPath.$part" : $part;
+                    $stack[] = [
+                        'data' => &$subData,
+                        'fieldParts' => $fieldParts,
+                        'rules' => $rules,
+                        'currentPath' => $newPath,
+                        'fullPath' => $fullPath
+                    ];
+                }
+                if ($this->stopOnFirstError && !empty($this->errors)) {
+                    $this->hasValidated = true;
+                    return false;
+                }
             }
+            $this->hasValidated = true;
+            return empty($this->errors);
+        } finally {
+            $this->validating = false;
         }
-        $this->hasValidated = true;
-        return empty($this->errors);
     }
 
     private function hasRequiredRule(array $rules): bool
@@ -440,8 +448,23 @@ class Validator
     // will return a verdict about data/rules that no longer exist. Later
     // workstreams build validated() and validateOrFail() on top of this
     // flag, so a violation here is not merely cosmetic.
+    //
+    // The $validating guard handles a different case: a rule that captures
+    // its own validator and calls passes()/fails() while validate() is
+    // still running. hasValidated is not set until validate() returns, so
+    // without this guard such a call would restart validate() from inside
+    // itself, and that same rule would re-enter again -- unbounded
+    // recursion. When $validating is true we instead report the errors
+    // accumulated so far, without restarting or recursing.
     private function validationPassed(): bool
     {
+        if ($this->validating) {
+            // Re-entrant call from inside a rule: report the state
+            // accumulated so far rather than restarting validation and
+            // recursing forever.
+            return empty($this->errors);
+        }
+
         if (!$this->hasValidated) {
             return $this->validate();
         }

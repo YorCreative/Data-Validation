@@ -855,4 +855,29 @@ class ValidatorTest extends TestCase
         );
         $this->assertNotEmpty($cache);
     }
+
+    public function testReentrantPassesCallDoesNotRestartValidation(): void
+    {
+        $validator = null;
+        $depth = 0;
+
+        RuleRegistry::registerClosureRule('reentrant_probe', function () use (&$validator, &$depth) {
+            $depth++;
+            // Bound the recursion so an unfixed implementation fails the
+            // assertion instead of exhausting the stack.
+            if ($depth < 5 && $validator !== null) {
+                $validator->passes();
+            }
+            return true;
+        });
+
+        $validator = Validator::make(['a' => 1], ['a' => 'reentrant_probe']);
+        $validator->validate();
+
+        $this->assertSame(
+            1,
+            $depth,
+            'A rule calling passes() on its own validator must not restart validation.'
+        );
+    }
 }
