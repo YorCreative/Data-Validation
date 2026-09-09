@@ -7,9 +7,13 @@ on:
   pull_request:
 
 jobs:
+  # The default dependency set: laravel/framework ^12 || ^13 is installed, so
+  # the provider's boot() is exercised against a real Illuminate application.
   test:
+    name: PHP ${{ matrix.php-version }} - locked deps
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         php-version: ['8.3', '8.4', '8.5']
 
@@ -26,6 +30,64 @@ jobs:
 
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Run PHPUnit
+        run: vendor/bin/phpunit --testdox
+
+  # Every Laravel major the package claims to support, resolved from scratch.
+  #
+  # Laravel 10 and 11 use the split illuminate/* packages deliberately: every
+  # laravel/framework release in those ranges is withheld by Composer's
+  # security-advisory policy, and the alternative would be disabling that check.
+  # The advisories do not apply to the split packages, so those majors are still
+  # exercised here -- they just cannot supply a real Application, and the
+  # boot() tests skip themselves accordingly.
+  laravel-majors:
+    name: Laravel ${{ matrix.laravel }} - PHP ${{ matrix.php-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.3', '8.5']
+        laravel: ['10', '11', '12', '13']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: zip, intl
+          coverage: none
+
+      - name: Pin the Laravel major
+        run: |
+          # laravel/framework replaces the illuminate/* split packages, so the
+          # two cannot both be constrained at once. Drop it for the majors whose
+          # framework releases are advisory-blocked, and pin it for the rest.
+          if [ "${{ matrix.laravel }}" -le 11 ]; then
+            composer remove --dev laravel/framework --no-update --no-interaction
+          else
+            composer require --dev "laravel/framework:^${{ matrix.laravel }}.0" \
+              --no-update --no-interaction
+          fi
+
+          for pkg in support validation filesystem translation config; do
+            composer require --dev "illuminate/${pkg}:^${{ matrix.laravel }}.0" \
+              --no-update --no-interaction
+          done
+
+      - name: Resolve dependencies
+        run: |
+          composer update --with-all-dependencies \
+            --prefer-dist --no-progress --no-interaction
+
+      - name: Show what actually resolved
+        # illuminate/support is not separately installed when laravel/framework
+        # is present -- the framework replaces it -- so list whichever is there.
+        run: composer show | grep -E '^(laravel/framework|illuminate/support) ' || true
 
       - name: Run PHPUnit
         run: vendor/bin/phpunit --testdox

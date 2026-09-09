@@ -39,7 +39,8 @@
     "symfony/translation": "^6.0 || ^7.0 || ^8.0",
     "illuminate/filesystem": "^10.0 || ^11.0 || ^12.0 || ^13.0",
     "illuminate/translation": "^10.0 || ^11.0 || ^12.0 || ^13.0",
-    "illuminate/config": "^10.0 || ^11.0 || ^12.0 || ^13.0"
+    "illuminate/config": "^10.0 || ^11.0 || ^12.0 || ^13.0",
+    "laravel/framework": "^12.0 || ^13.0"
   },
   "suggest": {
     "illuminate/support": "Required only when using the optional Laravel ServiceProvider (^10.0 || ^11.0 || ^12.0 || ^13.0)."
