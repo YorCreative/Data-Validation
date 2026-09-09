@@ -116,6 +116,13 @@ class Validator
     {
         $this->validating = true;
         try {
+            // A new run invalidates the previous verdict immediately. The flag
+            // is set again only where this run completes -- the normal return
+            // and the stopOnFirstError early failure below -- so a run that
+            // throws part-way cannot leave a stale true behind for passes()
+            // and fails() to read as success against an already-emptied
+            // $errors array.
+            $this->hasValidated = false;
             $this->errors = [];
             $this->fieldValueCache = [];
             $stack = [];
@@ -125,7 +132,7 @@ class Validator
                     continue;
                 }
                 $stack[] = [
-                    'data' => &$this->data,
+                    'data' => $this->data,
                     'fieldParts' => explode('.', $field),
                     'rules' => $this->getParsedRules($ruleSet),
                     'currentPath' => '',
@@ -135,7 +142,7 @@ class Validator
 
             while (!empty($stack)) {
                 $current = array_shift($stack);
-                $dataValue = &$current['data'];
+                $dataValue = $current['data'];
                 $fieldParts = $current['fieldParts'];
                 $rules = $current['rules'];
                 $currentPath = $current['currentPath'];
@@ -157,7 +164,7 @@ class Validator
                             $newPath = $currentPath ? "$currentPath.$key" : (string)$key;
                             $newFullPath = preg_replace('/(?<!\\\\)\*/', (string)$key, $fullPath, 1);
                             $stack[] = [
-                                'data' => &$dataValue[$key],
+                                'data' => $dataValue[$key],
                                 'fieldParts' => array_slice($fieldParts, 1),
                                 'rules' => $rules,
                                 'currentPath' => $newPath,
@@ -173,7 +180,7 @@ class Validator
                         : null;
                     $newPath = $currentPath ? "$currentPath.$part" : $part;
                     $stack[] = [
-                        'data' => &$subData,
+                        'data' => $subData,
                         'fieldParts' => $fieldParts,
                         'rules' => $rules,
                         'currentPath' => $newPath,

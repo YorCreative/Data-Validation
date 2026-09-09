@@ -619,6 +619,78 @@ class ValidatorTest extends TestCase
         );
     }
 
+    public function testHasValidatedIsResetWhenARevalidationRunThrows(): void
+    {
+        // The sibling test above covers a rule that throws on the very first
+        // run, where hasValidated was false to begin with. This covers the
+        // case the flag actually has to be reset for: a run that COMPLETED
+        // successfully, followed by a run that begins and then throws. If
+        // validate() does not clear hasValidated when the new run begins, the
+        // stale true from run one outlives the failed run two -- and because
+        // run two already emptied $errors, passes() reports success for a
+        // validation that never finished.
+        RuleRegistry::hasRule('required');
+
+        $reflection = new ReflectionClass(RuleRegistry::class);
+        $rulesProp = $reflection->getProperty('rules');
+        $rules = $rulesProp->getValue();
+        $rules['flaky_test_rule'] = new class implements ValidationRuleInterface {
+            private int $calls = 0;
+
+            public function validate(string $field, $value, array $parameters, array $data): bool
+            {
+                if ($this->calls++ === 0) {
+                    return true;
+                }
+                throw new RuntimeException('boom on revalidation');
+            }
+
+            public function getErrorMessage(string $field, array $parameters, ?string $customMessage): string
+            {
+                return '';
+            }
+
+            public function validateParameters(string $field, array $parameters): void
+            {
+            }
+        };
+        $rulesProp->setValue(null, $rules);
+
+        $validator = Validator::make(['name' => 'John'], ['name' => 'flaky_test_rule']);
+        $validatorReflection = new ReflectionClass($validator);
+        $hasValidatedProp = $validatorReflection->getProperty('hasValidated');
+
+        $this->assertTrue($validator->validate(), 'The first run must complete successfully.');
+        $this->assertTrue(
+            $hasValidatedProp->getValue($validator),
+            'hasValidated must be true after a completed run.'
+        );
+
+        $threw = false;
+        try {
+            $validator->validate();
+        } catch (RuntimeException $e) {
+            $threw = true;
+        }
+        $this->assertTrue($threw, 'The second run must throw.');
+
+        $this->assertFalse(
+            $hasValidatedProp->getValue($validator),
+            'hasValidated must be cleared once a new run begins and must not survive a run that threw.'
+        );
+
+        $threwAgain = false;
+        try {
+            $validator->passes();
+        } catch (RuntimeException $e) {
+            $threwAgain = true;
+        }
+        $this->assertTrue(
+            $threwAgain,
+            'passes() must retry and re-throw rather than report cached success from the earlier run.'
+        );
+    }
+
     public function testRepeatedPassesCallsValidateOnlyOnce(): void
     {
         $validator = Validator::make(['name' => 'John'], ['name' => 'required']);
