@@ -36,6 +36,12 @@ jobs:
 
   # Every Laravel major the package claims to support, resolved from scratch.
   #
+  # This job answers "does the suite pass against this dependency set", so it
+  # runs without a coverage driver. phpunit.xml sets failOnWarning, and PHPUnit
+  # warns when a coverage driver is missing, so --no-coverage is required here
+  # rather than optional -- without it the job fails on the warning alone while
+  # every test passes.
+  #
   # Laravel 10 and 11 use the split illuminate/* packages deliberately: every
   # laravel/framework release in those ranges is withheld by Composer's
   # security-advisory policy, and the alternative would be disabling that check.
@@ -90,4 +96,4 @@ jobs:
         run: composer show | grep -E '^(laravel/framework|illuminate/support) ' || true
 
       - name: Run PHPUnit
-        run: vendor/bin/phpunit --testdox
+        run: vendor/bin/phpunit --testdox --no-coverage
