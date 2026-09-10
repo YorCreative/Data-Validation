@@ -95,4 +95,39 @@ class DataValidationConfigTest extends TestCase
         $this->assertEquals(2505, $config->parsedRulesCache); // max(500, 50100 / 20) = 2505
         $this->assertEquals(501, $config->chunkSize); // max(500, min(10000, 50100 / 100)) = max(500, 501) = 501
     }
+
+    public function testChunkSizeCanBeNullToEnableDynamicHeuristic()
+    {
+        $config = new DataValidationConfig();
+        $config->chunkSize = null;
+
+        $this->assertNull($config->chunkSize);
+    }
+
+    public function testOptimizeForLargeDatasetClampsToMinimumsForSmallTotals(): void
+    {
+        $config = new DataValidationConfig();
+
+        // 1001 divides evenly by none of 2, 20 or 100, so float division
+        // would produce 500.5 / 50.05 / 10.01 and blow up on assignment.
+        $config->optimizeForLargeDataset(1001);
+
+        $this->assertSame(1000, $config->fieldCacheLimit);
+        $this->assertSame(500, $config->parsedRulesCache);
+        $this->assertSame(500, $config->chunkSize);
+    }
+
+    // Depends on phpunit.xml's failOnDeprecation="true": the behaviour this
+    // test covers has no value-level observable, only a deprecation notice
+    // that would otherwise pass silently.
+    public function testOptimizeForLargeDatasetScalesWithLargeNonDivisibleTotals(): void
+    {
+        $config = new DataValidationConfig();
+
+        $config->optimizeForLargeDataset(100001);
+
+        $this->assertSame(50000, $config->fieldCacheLimit);
+        $this->assertSame(5000, $config->parsedRulesCache);
+        $this->assertSame(1000, $config->chunkSize);
+    }
 }

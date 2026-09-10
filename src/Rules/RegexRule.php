@@ -22,11 +22,15 @@ class RegexRule implements ValidationRuleInterface
     public function validateParameters(string $field, array $parameters): void
     {
         if (count($parameters) !== 1) {
-            throw new InvalidArgumentException("The 'regex' rule for field '{$field}' requires exactly one parameter (the pattern).");
+            throw new InvalidArgumentException(
+                "The 'regex' rule for field '{$field}' requires exactly one parameter (the pattern)."
+            );
         }
         $pattern = $parameters[0];
         if (!is_string($pattern)) {
-            throw new InvalidArgumentException("The 'regex' rule for field '{$field}' requires a string pattern as its parameter.");
+            throw new InvalidArgumentException(
+                "The 'regex' rule for field '{$field}' requires a string pattern as its parameter."
+            );
         }
         // Test the pattern for validity
         if (@preg_match($pattern, '') === false) {

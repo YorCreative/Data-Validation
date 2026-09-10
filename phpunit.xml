@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd" bootstrap="vendor/autoload.php" colors="true">
+<!--
+    failOnDeprecation="true" and failOnWarning="true" below are load-bearing
+    for specific tests (e.g. DataValidationConfigTest::
+    testOptimizeForLargeDatasetScalesWithLargeNonDivisibleTotals and
+    ValidatorTest::testDeterminesChunkSizeDynamicallyWhenNoConfigProvided),
+    which cover behaviours with no value-level observable other than a
+    deprecation/warning notice. Do not remove either flag without first
+    replacing those tests with assertions that do not depend on them.
+-->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd" bootstrap="vendor/autoload.php" colors="true" failOnDeprecation="true" failOnWarning="true">
     <testsuites>
         <testsuite name="Unit">
             <directory suffix="Test.php">./tests/Unit</directory>

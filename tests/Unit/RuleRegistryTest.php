@@ -23,20 +23,16 @@ class RuleRegistryTest extends TestCase
 
         $reflection = new ReflectionClass(RuleRegistry::class);
         $rulesProp = $reflection->getProperty('rules');
-        $rulesProp->setAccessible(true);
-        $rulesProp->setValue([]);
+        $rulesProp->setValue(null, []);
 
         $closureRulesProp = $reflection->getProperty('closureRules');
-        $closureRulesProp->setAccessible(true);
-        $closureRulesProp->setValue([]);
+        $closureRulesProp->setValue(null, []);
 
         $dirsProp = $reflection->getProperty('customRuleDirectories');
-        $dirsProp->setAccessible(true);
-        $dirsProp->setValue([]);
+        $dirsProp->setValue(null, []);
 
         $initProp = $reflection->getProperty('isInitialized');
-        $initProp->setAccessible(true);
-        $initProp->setValue(false);
+        $initProp->setValue(null, false);
     }
 
     protected function tearDown(): void
@@ -72,11 +68,9 @@ class RuleRegistryTest extends TestCase
         RuleRegistry::registerCustomRuleDirectory($this->tempDir);
         $reflection = new ReflectionClass(RuleRegistry::class);
         $dirsProp = $reflection->getProperty('customRuleDirectories');
-        $dirsProp->setAccessible(true);
         $dirs = $dirsProp->getValue();
         $this->assertContains(rtrim($this->tempDir, DIRECTORY_SEPARATOR), $dirs);
         $initProp = $reflection->getProperty('isInitialized');
-        $initProp->setAccessible(true);
         $this->assertFalse($initProp->getValue());
     }
 
@@ -93,7 +87,6 @@ class RuleRegistryTest extends TestCase
         RuleRegistry::registerCustomRuleDirectory($this->tempDir);
         $reflection = new ReflectionClass(RuleRegistry::class);
         $dirsProp = $reflection->getProperty('customRuleDirectories');
-        $dirsProp->setAccessible(true);
         $dirs = $dirsProp->getValue();
         $this->assertCount(1, $dirs);
         $this->assertContains(rtrim($this->tempDir, DIRECTORY_SEPARATOR), $dirs);
@@ -103,11 +96,9 @@ class RuleRegistryTest extends TestCase
     {
         $reflection = new ReflectionClass(RuleRegistry::class);
         $initProp = $reflection->getProperty('isInitialized');
-        $initProp->setAccessible(true);
-        $initProp->setValue(false);
+        $initProp->setValue(null, false);
 
         $rulesProp = $reflection->getProperty('rules');
-        $rulesProp->setAccessible(true);
         $initialRules = $rulesProp->getValue();
 
         RuleRegistry::hasRule('required'); // Triggers initialization
@@ -123,11 +114,9 @@ class RuleRegistryTest extends TestCase
     {
         $reflection = new ReflectionClass(RuleRegistry::class);
         $initProp = $reflection->getProperty('isInitialized');
-        $initProp->setAccessible(true);
-        $initProp->setValue(true);
+        $initProp->setValue(null, true);
 
         $rulesProp = $reflection->getProperty('rules');
-        $rulesProp->setAccessible(true);
         $initialRules = $rulesProp->getValue();
 
         RuleRegistry::hasRule('required'); // Should not reload rules
@@ -179,7 +168,6 @@ class RuleRegistryTest extends TestCase
         RuleRegistry::registerClosureRule('custom', $closure, 'Custom error.');
         $reflection = new ReflectionClass(RuleRegistry::class);
         $closureRulesProp = $reflection->getProperty('closureRules');
-        $closureRulesProp->setAccessible(true);
         $closureRules = $closureRulesProp->getValue();
         $this->assertArrayHasKey('custom', $closureRules);
         $this->assertInstanceOf(ClosureRule::class, $closureRules['custom']);
@@ -202,7 +190,6 @@ PHP;
 
         $reflection = new ReflectionClass(RuleRegistry::class);
         $rulesProp = $reflection->getProperty('rules');
-        $rulesProp->setAccessible(true);
 
         RuleRegistry::hasRule('required'); // Initialize default rules
         $initialRules = $rulesProp->getValue();
@@ -210,8 +197,7 @@ PHP;
 
         RuleRegistry::registerCustomRuleDirectory($this->tempDir);
         $initProp = $reflection->getProperty('isInitialized');
-        $initProp->setAccessible(true);
-        $initProp->setValue(false);
+        $initProp->setValue(null, false);
 
         RuleRegistry::hasRule('test'); // Trigger reload with custom rules
 
@@ -226,11 +212,9 @@ PHP;
     {
         $reflection = new ReflectionClass(RuleRegistry::class);
         $loadRulesFromDirectoryMethod = $reflection->getMethod('loadRulesFromDirectory');
-        $loadRulesFromDirectoryMethod->setAccessible(true);
         $loadRulesFromDirectoryMethod->invoke(null, '/non/existent/path', null);
 
         $rulesProp = $reflection->getProperty('rules');
-        $rulesProp->setAccessible(true);
         $this->assertEmpty($rulesProp->getValue());
     }
 
@@ -251,11 +235,9 @@ PHP;
 
         $reflection = new ReflectionClass(RuleRegistry::class);
         $loadRulesFromDirectoryMethod = $reflection->getMethod('loadRulesFromDirectory');
-        $loadRulesFromDirectoryMethod->setAccessible(true);
         $loadRulesFromDirectoryMethod->invoke(null, $this->tempDir, 'TestRules');
 
         $rulesProp = $reflection->getProperty('rules');
-        $rulesProp->setAccessible(true);
         $rules = $rulesProp->getValue();
         $this->assertArrayHasKey('test', $rules);
         $this->assertInstanceOf(ValidationRuleInterface::class, $rules['test']);
@@ -267,11 +249,9 @@ PHP;
 
         $reflection = new ReflectionClass(RuleRegistry::class);
         $loadRulesFromDirectoryMethod = $reflection->getMethod('loadRulesFromDirectory');
-        $loadRulesFromDirectoryMethod->setAccessible(true);
         $loadRulesFromDirectoryMethod->invoke(null, $this->tempDir, null);
 
         $rulesProp = $reflection->getProperty('rules');
-        $rulesProp->setAccessible(true);
         $this->assertEmpty($rulesProp->getValue());
     }
 
@@ -292,11 +272,9 @@ PHP;
 
         $reflection = new ReflectionClass(RuleRegistry::class);
         $loadRulesFromDirectoryMethod = $reflection->getMethod('loadRulesFromDirectory');
-        $loadRulesFromDirectoryMethod->setAccessible(true);
         $loadRulesFromDirectoryMethod->invoke(null, $this->tempDir, 'TestRules');
 
         $rulesProp = $reflection->getProperty('rules');
-        $rulesProp->setAccessible(true);
         $this->assertEmpty($rulesProp->getValue());
     }
 
@@ -313,11 +291,9 @@ PHP;
 
         $reflection = new ReflectionClass(RuleRegistry::class);
         $loadRulesFromDirectoryMethod = $reflection->getMethod('loadRulesFromDirectory');
-        $loadRulesFromDirectoryMethod->setAccessible(true);
         $loadRulesFromDirectoryMethod->invoke(null, $this->tempDir, 'TestRules');
 
         $rulesProp = $reflection->getProperty('rules');
-        $rulesProp->setAccessible(true);
         $this->assertEmpty($rulesProp->getValue());
     }
 
@@ -335,11 +311,9 @@ PHP;
 
         $reflection = new ReflectionClass(RuleRegistry::class);
         $loadRulesFromDirectoryMethod = $reflection->getMethod('loadRulesFromDirectory');
-        $loadRulesFromDirectoryMethod->setAccessible(true);
         $loadRulesFromDirectoryMethod->invoke(null, $this->tempDir, 'TestRules');
 
         $rulesProp = $reflection->getProperty('rules');
-        $rulesProp->setAccessible(true);
         $this->assertEmpty($rulesProp->getValue());
     }
 
@@ -347,11 +321,9 @@ PHP;
     {
         $reflection = new ReflectionClass(RuleRegistry::class);
         $rulesProp = $reflection->getProperty('rules');
-        $rulesProp->setAccessible(true);
-        $rulesProp->setValue(['closure' => new ClosureRule(fn () => true)]);
+        $rulesProp->setValue(null, ['closure' => new ClosureRule(fn () => true)]);
 
         $loadRulesMethod = $reflection->getMethod('loadRules');
-        $loadRulesMethod->setAccessible(true);
         $loadRulesMethod->invoke(null);
 
         $rules = $rulesProp->getValue();
@@ -377,11 +349,9 @@ PHP;
 
         $reflection = new ReflectionClass(RuleRegistry::class);
         $loadRulesFromDirectoryMethod = $reflection->getMethod('loadRulesFromDirectory');
-        $loadRulesFromDirectoryMethod->setAccessible(true);
         $loadRulesFromDirectoryMethod->invoke(null, $this->tempDir, 'TestRules');
 
         $rulesProp = $reflection->getProperty('rules');
-        $rulesProp->setAccessible(true);
         $this->assertEmpty($rulesProp->getValue());
     }
 
@@ -389,7 +359,6 @@ PHP;
     {
         $reflection = new ReflectionClass(RuleRegistry::class);
         $method = $reflection->getMethod('deriveRuleNameFromClassName');
-        $method->setAccessible(true);
 
         $this->assertEquals('min', $method->invoke(null, 'YorCreative\\DataValidation\\Rules\\MinRule'));
         $this->assertEquals('required_if', $method->invoke(null, 'RequiredIfRule'));
@@ -403,7 +372,6 @@ PHP;
 
         $reflection = new ReflectionClass(RuleRegistry::class);
         $method = $reflection->getMethod('getClassNameFromFile');
-        $method->setAccessible(true);
 
         $className = $method->invoke(null, $file, $this->tempDir, 'TestRules');
         $this->assertEquals('TestRules\\TestRule', $className);
@@ -416,7 +384,6 @@ PHP;
 
         $reflection = new ReflectionClass(RuleRegistry::class);
         $method = $reflection->getMethod('getClassNameFromFile');
-        $method->setAccessible(true);
 
         $className = $method->invoke(null, $file, $this->tempDir, null);
         $this->assertEquals('CustomRules\\TestRule', $className);
@@ -429,7 +396,6 @@ PHP;
 
         $reflection = new ReflectionClass(RuleRegistry::class);
         $method = $reflection->getMethod('getClassNameFromFile');
-        $method->setAccessible(true);
 
         $className = $method->invoke(null, $file, $this->tempDir, null);
         $this->assertNull($className);
@@ -440,7 +406,6 @@ PHP;
         $nonExistentFile = new SplFileInfo($this->tempDir . DIRECTORY_SEPARATOR . 'NonExistentRule.php');
         $reflection = new ReflectionClass(RuleRegistry::class);
         $method = $reflection->getMethod('getClassNameFromFile');
-        $method->setAccessible(true);
 
         $className = $method->invoke(null, $nonExistentFile, $this->tempDir, null);
         $this->assertNull($className);
@@ -455,7 +420,6 @@ PHP;
 
         $reflection = new ReflectionClass(RuleRegistry::class);
         $method = $reflection->getMethod('getClassNameFromFile');
-        $method->setAccessible(true);
 
         $className = $method->invoke(null, $nonRealFile, $this->tempDir, 'TestRules');
         $this->assertNull($className);

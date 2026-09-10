@@ -54,7 +54,10 @@ class RuleRegistry
         if (isset(self::$rules[$ruleName])) {
             return self::$rules[$ruleName];
         }
-        throw new InvalidArgumentException("Unknown validation rule: '$ruleName'. Ensure the rule class exists, is discoverable, and named correctly (e.g., 'MinRule' for 'min').");
+        throw new InvalidArgumentException(
+            "Unknown validation rule: '$ruleName'. Ensure the rule class exists, is discoverable, "
+            . "and named correctly (e.g., 'MinRule' for 'min')."
+        );
     }
 
     public static function hasRule(string $ruleName): bool
@@ -88,7 +91,10 @@ class RuleRegistry
             return;
         }
 
-        $directoryIterator = new RecursiveDirectoryIterator($directory, RecursiveDirectoryIterator::SKIP_DOTS | RecursiveDirectoryIterator::FOLLOW_SYMLINKS);
+        $directoryIterator = new RecursiveDirectoryIterator(
+            $directory,
+            RecursiveDirectoryIterator::SKIP_DOTS | RecursiveDirectoryIterator::FOLLOW_SYMLINKS
+        );
         $iterator = new RecursiveIteratorIterator($directoryIterator, RecursiveIteratorIterator::SELF_FIRST);
 
         foreach ($iterator as $file) {
@@ -132,19 +138,27 @@ class RuleRegistry
         return $snakeCaseName;
     }
 
-    private static function getClassNameFromFile(SplFileInfo $file, string $baseDirectory, ?string $baseNamespace): ?string
-    {
+    private static function getClassNameFromFile(
+        SplFileInfo $file,
+        string $baseDirectory,
+        ?string $baseNamespace
+    ): ?string {
         $realPath = $file->getRealPath();
         if (!$realPath || !is_readable($realPath)) {
             return null;
         }
 
-        $relativePath = trim(substr($realPath, strlen(rtrim($baseDirectory, DIRECTORY_SEPARATOR))), DIRECTORY_SEPARATOR);
+        $relativePath = trim(
+            substr($realPath, strlen(rtrim($baseDirectory, DIRECTORY_SEPARATOR))),
+            DIRECTORY_SEPARATOR
+        );
         $classPath = str_replace(DIRECTORY_SEPARATOR, '\\', $relativePath);
         $classNameWithoutExtension = pathinfo($classPath, PATHINFO_FILENAME);
 
         $namespaceWithinBase = dirname($classPath);
-        $namespaceWithinBase = ($namespaceWithinBase === '.' || $namespaceWithinBase === '') ? '' : '\\' . $namespaceWithinBase;
+        $namespaceWithinBase = ($namespaceWithinBase === '.' || $namespaceWithinBase === '')
+            ? ''
+            : '\\' . $namespaceWithinBase;
         $namespaceWithinBase = str_replace('\\\\', '\\', $namespaceWithinBase);
 
         if ($baseNamespace) {

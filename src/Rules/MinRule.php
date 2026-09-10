@@ -29,7 +29,9 @@ class MinRule implements ValidationRuleInterface
     public function validateParameters(string $field, array $parameters): void
     {
         if (count($parameters) !== 1 || !is_numeric($parameters[0])) {
-            throw new InvalidArgumentException("The 'min' rule for field '{$field}' requires exactly one numeric parameter.");
+            throw new InvalidArgumentException(
+                "The 'min' rule for field '{$field}' requires exactly one numeric parameter."
+            );
         }
     }
 }

@@ -48,7 +48,9 @@ class RequiredIfRule implements ValidationRuleInterface
     public function validateParameters(string $field, array $parameters): void
     {
         if (count($parameters) < 2) {
-            throw new InvalidArgumentException("The 'required_if' rule for field '{$field}' requires at least two parameters.");
+            throw new InvalidArgumentException(
+                "The 'required_if' rule for field '{$field}' requires at least two parameters."
+            );
         }
     }
 }

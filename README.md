@@ -33,7 +33,24 @@ composer require yorcreative/data-validation
 ```
 
 **Requirements**:
-- PHP 8.3 or 8.4
+- PHP 8.3, 8.4, or 8.5
+
+### Optional Laravel Integration
+
+The core library has **zero runtime framework dependencies**. When the package is installed inside a Laravel 10, 11, 12, or 13 application, an optional service provider (`YorCreative\DataValidation\Laravel\DataValidationServiceProvider`) is auto-discovered and binds:
+
+- A shared `DataValidationConfig` singleton, hydrated from `config/data-validation.php`
+- A `yorcreative.data-validation` factory closure that returns a `Validator` pre-configured from the container
+
+Publish the config file to customize cache limits and chunk size:
+
+```bash
+php artisan vendor:publish --tag=data-validation-config
+```
+
+Set `chunk_size` to `null` if you want the validator to fall back to its dynamic wildcard chunking heuristic instead of a fixed override.
+
+Outside of Laravel the provider class is never loaded — the library remains fully framework-agnostic.
 
 ## Basic Usage
 
@@ -190,6 +207,8 @@ if ($validator->fails()) {
     echo "Validation stopped at first error: " . implode(', ', $validator->errors()['user.email']);
 }
 ```
+
+`fails()` and `passes()` trigger validation on first use, so they can be used directly when you do not want to call `validate()` yourself.
 
 ## Extending with Custom Rules
 
